@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {View, ScrollView, TextInput, Button, StyleSheet, ActivityIndicator} from 'react-native';
+import {View, ScrollView, TextInput, Button, StyleSheet, ActivityIndicator, Alert} from 'react-native';
 import firebase from '../database/firebase';
 
 const initialState = {
@@ -33,13 +33,13 @@ export const UserDetailScreen = (props) => {
     }
 
     const handleOnUpdate = async ()=>{
-        console.log(state)
-        return;
+        
         if(state.name ===''){
             alert('Debe ingresar un nombre.');
         }else{
             try {
-                await firebase.db.collection('users').add({
+                const dbRef = firebase.db.collection('users').doc(state.id);
+                await dbRef.set({
                     ...state
                 });
                 setState(initialState);
@@ -51,21 +51,17 @@ export const UserDetailScreen = (props) => {
     }
 
     const handleOnDelete = async ()=>{
-        if(state.name ===''){
-            alert('Debe ingresar un nombre.');
-        }else{
-            try {
-                await firebase.db.collection('users').add({
-                    ...state
-                });
-                setState(initialState);
-                props.navigation.navigate('UserList');
-            } catch (error) {
-                console.log(error)
-            }
-        }
+        const dbRef = await firebase.db.collection('users').doc(props.route.params.userId);
+        await dbRef.delete();
+        props.navigation.navigate('UserList');
     }
 
+    const openConfirmationAlert = ()=>{
+        Alert.alert('Remover usuario', '¿Está seguro?',[
+            {text:'Si', onPress:()=>handleOnDelete()},
+            {text:'No', onPress:()=>console.log(false)}
+        ])
+    }
     if(loading){
         return (
             <View>
@@ -93,7 +89,7 @@ export const UserDetailScreen = (props) => {
             <View>
                 <Button 
                     color="#E37399"
-                    title="Eliminar" onPress={handleOnDelete}/>
+                    title="Eliminar" onPress={openConfirmationAlert}/>
             </View>
         </ScrollView>
     )
